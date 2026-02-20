@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Did I Watch?</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a26;
+            --bg-card-hover: #222233;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --accent-light: #a78bfa;
+            --text-primary: #f0f0f5;
+            --text-secondary: #9898a8;
+            --text-muted: #6b6b7b;
+            --border: #2a2a3a;
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
+            --gradient-1: linear-gradient(135deg, #8b5cf6, #ec4899);
+            --gradient-2: linear-gradient(135deg, #6366f1, #8b5cf6);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans Arabic', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* RTL support */
+        [dir="rtl"] .card-explanation { border-left: none; border-right: 3px solid var(--accent); }
+        [dir="rtl"] .search-footer { flex-direction: row-reverse; }
+        [dir="rtl"] .lang-picker { left: 24px; right: auto; }
+
+        /* ── Animated Background ── */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.06) 0%, transparent 50%);
+            z-index: 0;
+        }
+
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: float 20s ease-in-out infinite;
+            z-index: 0;
+        }
+        .orb-1 { width: 400px; height: 400px; background: #8b5cf6; top: -100px; right: -100px; }
+        .orb-2 { width: 300px; height: 300px; background: #ec4899; bottom: -50px; left: -50px; animation-delay: -7s; }
+        .orb-3 { width: 250px; height: 250px; background: #6366f1; top: 50%; left: 50%; animation-delay: -14s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        /* ── Language Picker ── */
+        .lang-picker {
+            position: fixed;
+            top: 20px;
+            right: 24px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lang-picker select {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239898a8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+            transition: all 0.2s ease;
+        }
+
+        [dir="rtl"] .lang-picker select {
+            background-position: left 10px center;
+            padding-right: 14px;
+            padding-left: 30px;
+        }
+
+        .lang-picker select:hover {
+            border-color: var(--accent);
+        }
+
+        .lang-icon {
+            font-size: 1.2rem;
+        }
+
+        /* ── Layout ── */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            margin-top: 12px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        /* ── Search Box ── */
+        .search-section { margin-bottom: 48px; }
+
+        .search-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow), 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .search-label {
+            display: block;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-light);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Inter', 'Noto Sans Arabic', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            min-height: 100px;
+            padding-right: 50px;
+        }
+
+        [dir="rtl"] textarea { padding-right: 0; padding-left: 50px; }
+
+        textarea::placeholder { color: var(--text-muted); }
+
+        /* ── Voice Button ── */
+        .voice-btn {
+            position: absolute;
+            top: 8px;
+            right: 4px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        [dir="rtl"] .voice-btn { right: auto; left: 4px; }
+
+        .voice-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .voice-btn.recording {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+            animation: pulse-ring 1.5s ease-in-out infinite;
+        }
+
+        .voice-btn.unsupported {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .voice-btn svg { width: 20px; height: 20px; }
+
+        .voice-status {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            margin-top: 8px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        .voice-status.active {
+            display: flex;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .voice-wave {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            height: 16px;
+        }
+
+        .voice-wave span {
+            display: block;
+            width: 3px;
+            background: var(--error);
+            border-radius: 3px;
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .voice-wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+        .voice-wave span:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+        .voice-wave span:nth-child(3) { height: 8px; animation-delay: 0.2s; }
+        .voice-wave span:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+        .voice-wave span:nth-child(5) { height: 6px; animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.8); }
+        }
+
+        .search-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            gap: 12px;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .char-count {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .detected-lang {
+            font-size: 0.75rem;
+            color: var(--accent-light);
+            background: rgba(139, 92, 246, 0.1);
+            padding: 3px 10px;
+            border-radius: 100px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            display: none;
+        }
+
+        .detected-lang.visible { display: inline-block; }
+
+        .search-btn {
+            background: var(--gradient-1);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .search-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+        }
+
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .search-btn .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Example Pills ── */
+        .examples { margin-top: 20px; }
+        .examples-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 500; }
+
+        .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pill:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        /* ── Results ── */
+        .results-section { margin-top: 16px; }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .results-header h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .results-header .count {
+            background: var(--accent);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 100px;
+        }
+
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease both;
+        }
+
+        .result-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            transform: translateY(-4px);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-card:nth-child(2) { animation-delay: 0.1s; }
+        .result-card:nth-child(3) { animation-delay: 0.2s; }
+        .result-card:nth-child(4) { animation-delay: 0.3s; }
+        .result-card:nth-child(5) { animation-delay: 0.4s; }
+
+        .card-inner { display: flex; gap: 0; }
+
+        .card-poster {
+            width: 180px;
+            min-height: 270px;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .card-poster .no-poster {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: var(--text-muted); font-size: 3rem;
+        }
+
+        .no-poster span { font-size: 0.75rem; margin-top: 8px; }
+
+        .card-content { flex: 1; padding: 24px; display: flex; flex-direction: column; }
+
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .confidence-badge {
+            flex-shrink: 0;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .confidence-high { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+        .confidence-medium { background: rgba(234,179,8,0.15); color: var(--warning); border: 1px solid rgba(234,179,8,0.3); }
+        .confidence-low { background: rgba(239,68,68,0.15); color: var(--error); border: 1px solid rgba(239,68,68,0.3); }
+
+        .card-meta { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+
+        .meta-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: var(--text-secondary); }
+
+        .type-badge {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-light);
+        }
+
+        .card-explanation {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            background: rgba(139, 92, 246, 0.08);
+            border-radius: 12px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .card-overview { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; flex: 1; }
+
+        /* ── Best Match ── */
+        .best-match { border-color: rgba(139, 92, 246, 0.4); position: relative; }
+        .best-match-tag {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: var(--gradient-1);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 100px;
+            letter-spacing: 1px;
+            z-index: 2;
+        }
+
+        [dir="rtl"] .best-match-tag { right: auto; left: 16px; }
+
+        /* ── States ── */
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 16px;
+            padding: 20px 24px;
+            color: #fca5a5;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            animation: slideUp 0.3s ease;
+        }
+
+        .loading-state { text-align: center; padding: 60px 24px; animation: slideUp 0.3s ease; }
+
+        .loading-animation { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+
+        .loading-dot {
+            width: 12px; height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+
+        .loading-dot:nth-child(2) { animation-delay: 0.16s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.32s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .loading-text { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; color: var(--text-secondary); }
+        .loading-subtext { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; }
+
+        .empty-state { text-align: center; padding: 80px 24px; color: var(--text-muted); }
+        .empty-icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.5; }
+        .empty-state h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; color: var(--text-secondary); margin-bottom: 8px; }
+
+        .footer { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 0.8rem; }
+        .footer a { color: var(--accent-light); text-decoration: none; }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            h1 { font-size: 2rem; }
+            .card-inner { flex-direction: column; }
+            .card-poster { width: 100%; min-height: 200px; max-height: 300px; }
+            .container { padding: 24px 16px; }
+            .lang-picker { top: 12px; right: 12px; }
+            .lang-picker select { padding: 6px 10px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    <div class="floating-orb orb-3"></div>
+
+    <!-- Language Picker -->
+    <div class="lang-picker">
+        <span class="lang-icon">🌍</span>
+        <select id="langSelect" onchange="changeLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="pt">Português</option>
+            <option value="it">Italiano</option>
+            <option value="ru">Русский</option>
+            <option value="ar">العربية</option>
+            <option value="fa">فارسی</option>
+            <option value="hi">हिन्दी</option>
+            <option value="zh">中文</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="tr">Türkçe</option>
+            <option value="id">Bahasa Indonesia</option>
+            <option value="th">ไทย</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="pl">Polski</option>
+            <option value="nl">Nederlands</option>
+            <option value="sv">Svenska</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🎬</div>
+            </div>
+            <h1 id="titleText">What Did I Watch?</h1>
+            <p class="subtitle" id="subtitleText">
+                Describe a movie, TV show, cartoon, or anime in your own words<br>
+                and AI will find it for you
+            </p>
+        </header>
+
+        <!-- Search -->
+        <section class="search-section">
+            <div class="search-box">
+                <label class="search-label" id="searchLabel">Describe what you remember</label>
+                <div class="textarea-wrapper">
+                    <textarea
+                        id="description"
+                        rows="4"
+                    ></textarea>
+                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Voice input">
+                        <svg id="micIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                        <svg id="stopIcon" style="display:none" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="6" width="12" height="12" rx="2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="voice-status" id="voiceStatus">
+                    <div class="voice-wave">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <span id="voiceStatusText">Listening...</span>
+                </div>
+                <div class="search-footer">
+                    <div class="footer-left">
+                        <span class="char-count" id="charCount">0</span>
+                        <span class="detected-lang" id="detectedLang"></span>
+                    </div>
+                    <button class="search-btn" id="searchBtn" onclick="doSearch()">
+                        <span id="btnText">Find It</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="examples">
+                <div class="examples-label" id="examplesLabel">Try an example:</div>
+                <div class="pills" id="pillsContainer"></div>
+            </div>
+        </section>
+
+        <!-- Results -->
+        <div id="results"></div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Powered by Claude AI &amp; TMDB &middot;
+            <a href="https://www.themoviedb.org" target="_blank">Movie data from TMDB</a>
+        </footer>
+    </div>
+
+    <script>
+    // ── Translations ──────────────────────────────────────────────────────────
+    const i18n = {
+        en: {
+            title: "What Did I Watch?",
+            subtitle: "Describe a movie, TV show, cartoon, or anime in your own words\nand AI will find it for you",
+            label: "Describe what you remember",
+            placeholder: "e.g. There was this cartoon I watched as a kid where kids had spinning tops that battled each other...",
+            findBtn: "Find It",
+            searching: "Searching...",
+            examples: "Try an example:",
+            chars: "characters",
+            thinking: "AI is thinking...",
+            thinkingSub: "Analyzing your description to find the best matches",
+            found: "Here's what I found",
+            match: "match",
+            matches: "matches",
+            noMatch: "Couldn't find a match",
+            noMatchSub: "Try adding more details about what you remember!",
+            moreDetail: "Please write a bit more — describe what you remember about the show or movie!",
+            listening: "Listening... speak now",
+            voiceUnsupported: "Voice input isn't supported in this browser",
+            bestMatch: "BEST MATCH",
+            noPoster: "No poster",
+            pills: [
+                "kids with spinning battle tops",
+                "blue hedgehog collecting rings",
+                "guy stuck in the same day over and over",
+                "teenagers with notebooks that kill people",
+                "small green alien teaches a farm boy",
+                "fish looking for his son"
+            ]
+        },
+        es: {
+            title: "¿Qué Vi?",
+            subtitle: "Describe una película, serie, caricatura o anime con tus propias palabras\ny la IA lo encontrará por ti",
+            label: "Describe lo que recuerdas",
+            placeholder: "ej. Había una caricatura que veía de niño donde los niños tenían trompos que peleaban entre sí...",
+            findBtn: "Buscar",
+            searching: "Buscando...",
+            examples: "Prueba un ejemplo:",
+            chars: "caracteres",
+            thinking: "La IA está pensando...",
+            thinkingSub: "Analizando tu descripción para encontrar las mejores coincidencias",
+            found: "Esto es lo que encontré",
+            match: "resultado",
+            matches: "resultados",
+            noMatch: "No encontré coincidencias",
+            noMatchSub: "¡Intenta agregar más detalles sobre lo que recuerdas!",
+            moreDetail: "Por favor escribe un poco más — ¡describe lo que recuerdas de la serie o película!",
+            listening: "Escuchando... habla ahora",
+            voiceUnsupported: "La entrada de voz no está disponible en este navegador",
+            bestMatch: "MEJOR RESULTADO",
+            noPoster: "Sin póster",
+            pills: [
+                "niños con trompos de batalla",
+                "erizo azul recogiendo anillos",
+                "tipo atrapado en el mismo día una y otra vez",
+                "adolescentes con cuadernos que matan gente",
+                "alien verde pequeño enseña a un chico",
+                "pez buscando a su hijo"
+            ]
+        },
+        fr: {
+            title: "Qu'est-ce que j'ai regardé ?",
+            subtitle: "Décris un film, une série, un dessin animé ou un anime avec tes propres mots\net l'IA le trouvera pour toi",
+            label: "Décris ce dont tu te souviens",
+            placeholder: "ex. Il y avait ce dessin animé que je regardais petit où des enfants avaient des toupies qui se battaient...",
+            findBtn: "Chercher",
+            searching: "Recherche...",
+            examples: "Essaie un exemple :",
+            chars: "caractères",
+            thinking: "L'IA réfléchit...",
+            thinkingSub: "Analyse de ta description pour trouver les meilleurs résultats",
+            found: "Voici ce que j'ai trouvé",
+            match: "résultat",
+            matches: "résultats",
+            noMatch: "Pas de résultat trouvé",
+            noMatchSub: "Essaie d'ajouter plus de détails !",
+            moreDetail: "Écris un peu plus — décris ce dont tu te souviens !",
+            listening: "Écoute en cours... parle maintenant",
+            voiceUnsupported: "La saisie vocale n'est pas prise en charge",
+            bestMatch: "MEILLEUR RÉSULTAT",
+            noPoster: "Pas d'affiche",
+            pills: [
+                "enfants avec des toupies de combat",
+                "hérisson bleu qui collectionne des anneaux",
+                "type coincé dans la même journée",
+                "ados avec des cahiers qui tuent",
+                "petit alien vert qui enseigne à un garçon",
+                "poisson qui cherche son fils"
+            ]
+        },
+        ar: {
+            title: "شو كنت أتفرج؟",
+            subtitle: "وصف فيلم أو مسلسل أو كرتون أو أنمي بكلماتك\nوالذكاء الاصطناعي رح يلاقيه لك",
+            label: "وصف اللي تتذكره",
+            placeholder: "مثلاً: كان في كرتون كنت أتفرج عليه وأنا صغير فيه ولاد عندهم بلابل بتتقاتل مع بعض...",
+            findBtn: "ابحث",
+            searching: "جاري البحث...",
+            examples: "جرب مثال:",
+            chars: "حرف",
+            thinking: "الذكاء الاصطناعي يفكر...",
+            thinkingSub: "جاري تحليل وصفك للعثور على أفضل النتائج",
+            found: "هذا اللي لقيته",
+            match: "نتيجة",
+            matches: "نتائج",
+            noMatch: "ما لقيت نتائج",
+            noMatchSub: "حاول تضيف تفاصيل أكثر!",
+            moreDetail: "اكتب أكثر شوي — وصف اللي تتذكره عن المسلسل أو الفيلم!",
+            listening: "جاري الاستماع... تكلم الآن",
+            voiceUnsupported: "الإدخال الصوتي غير مدعوم في هذا المتصفح",
+            bestMatch: "أفضل نتيجة",
+            noPoster: "بدون ملصق",
+            pills: [
+                "ولاد عندهم بلابل بتتقاتل",
+                "قنفذ أزرق يجمع حلقات",
+                "واحد عالق في نفس اليوم",
+                "مراهقين عندهم دفاتر تقتل الناس",
+                "كائن فضائي أخضر صغير يعلم ولد",
+                "سمكة تدور على ابنها"
+            ]
+        },
+        fa: {
+            title: "چی دیدم؟",
+            subtitle: "یه فیلم، سریال، کارتون یا انیمه رو با کلمات خودت توصیف کن\nو هوش مصنوعی پیداش می‌کنه",
+            label: "چیزی که یادت میاد رو توصیف کن",
+            placeholder: "مثلاً: یه کارتونی بود بچگی می‌دیدم که بچه‌ها فرفره‌هایی داشتن که با هم مبارزه می‌کردن...",
+            findBtn: "پیدا کن",
+            searching: "در حال جستجو...",
+            examples: "یه مثال امتحان کن:",
+            chars: "حرف",
+            thinking: "هوش مصنوعی داره فکر می‌کنه...",
+            thinkingSub: "در حال تحلیل توصیف شما برای یافتن بهترین نتایج",
+            found: "این چیزیه که پیدا کردم",
+            match: "نتیجه",
+            matches: "نتایج",
+            noMatch: "نتیجه‌ای پیدا نشد",
+            noMatchSub: "سعی کن جزئیات بیشتری اضافه کنی!",
+            moreDetail: "لطفاً بیشتر بنویس — توصیف کن چی از فیلم یا سریال یادت میاد!",
+            listening: "در حال گوش دادن... الان حرف بزن",
+            voiceUnsupported: "ورودی صوتی در این مرورگر پشتیبانی نمی‌شود",
+            bestMatch: "بهترین نتیجه",
+            noPoster: "بدون پوستر",
+            pills: [
+                "بچه‌ها با فرفره‌های جنگی",
+                "جوجه تیغی آبی که حلقه جمع می‌کنه",
+                "یارو گیر کرده توی همون روز",
+                "نوجوونا با دفترچه‌هایی که آدم می‌کشن",
+                "موجود فضایی سبز کوچولو که به یه پسر یاد میده",
+                "ماهی که دنبال پسرشه"
+            ]
+        },
+        ja: {
+            title: "何を観た？",
+            subtitle: "映画、テレビ番組、アニメを自分の言葉で説明してください\nAIがあなたの代わりに見つけます",
+            label: "覚えていることを説明してください",
+            placeholder: "例：子供の頃に見たアニメで、子供たちがコマを使って戦う番組があった...",
+            findBtn: "検索",
+            searching: "検索中...",
+            examples: "例を試してみてください：",
+            chars: "文字",
+            thinking: "AIが考えています...",
+            thinkingSub: "あなたの説明を分析して最適な結果を探しています",
+            found: "見つかった結果",
+            match: "件",
+            matches: "件",
+            noMatch: "結果が見つかりませんでした",
+            noMatchSub: "もう少し詳しく説明してみてください！",
+            moreDetail: "もう少し詳しく書いてください — 番組や映画について覚えていることを説明してください！",
+            listening: "聞いています... 今話してください",
+            voiceUnsupported: "このブラウザでは音声入力がサポートされていません",
+            bestMatch: "ベストマッチ",
+            noPoster: "ポスターなし",
+            pills: [
+                "回転するコマで戦う子供たち",
+                "リングを集める青いハリネズミ",
+                "同じ日を繰り返す男",
+                "人を殺すノートを持つ高校生",
+                "農家の少年に教える小さな緑のエイリアン",
+                "息子を探す魚"
+            ]
+        },
+        ko: {
+            title: "내가 뭘 봤지?",
+            subtitle: "영화, TV 프로그램, 만화 또는 애니메를 자신의 말로 설명하세요\nAI가 찾아드립니다",
+            label: "기억나는 것을 설명하세요",
+            placeholder: "예: 어렸을 때 본 만화인데, 아이들이 팽이를 가지고 서로 싸우는 거였어요...",
+            findBtn: "찾기",
+            searching: "검색 중...",
+            examples: "예시를 시도해보세요:",
+            chars: "글자",
+            thinking: "AI가 생각하고 있습니다...",
+            thinkingSub: "최적의 결과를 찾기 위해 설명을 분석하고 있습니다",
+            found: "찾은 결과",
+            match: "개 결과",
+            matches: "개 결과",
+            noMatch: "결과를 찾을 수 없습니다",
+            noMatchSub: "더 자세한 설명을 추가해보세요!",
+            moreDetail: "조금 더 자세히 설명해주세요!",
+            listening: "듣고 있습니다... 지금 말씀하세요",
+            voiceUnsupported: "이 브라우저에서는 음성 입력이 지원되지 않습니다",
+            bestMatch: "최고 매치",
+            noPoster: "포스터 없음",
+            pills: [
+                "회전하는 팽이로 싸우는 아이들",
+                "링을 모으는 파란 고슴도치",
+                "같은 날을 반복하는 남자",
+                "사람을 죽이는 노트를 가진 십대들",
+                "농장 소년을 가르치는 작은 녹색 외계인",
+                "아들을 찾는 물고기"
+            ]
+        },
+        zh: {
+            title: "我看了什么？",
+            subtitle: "用你自己的话描述一部电影、电视剧、动画片或动漫\nAI会帮你找到它",
+            label: "描述你记得的内容",
+            placeholder: "例如：小时候看过一个动画片，里面的孩子们用陀螺互相对战...",
+            findBtn: "查找",
+            searching: "搜索中...",
+            examples: "试试例子：",
+            chars: "个字符",
+            thinking: "AI正在思考...",
+            thinkingSub: "正在分析你的描述以找到最佳匹配",
+            found: "以下是我找到的",
+            match: "个结果",
+            matches: "个结果",
+            noMatch: "没有找到匹配",
+            noMatchSub: "试着添加更多细节！",
+            moreDetail: "请多写一些——描述你对这部剧或电影的记忆！",
+            listening: "正在聆听...请现在说话",
+            voiceUnsupported: "此浏览器不支持语音输入",
+            bestMatch: "最佳匹配",
+            noPoster: "无海报",
+            pills: [
+                "孩子们用陀螺对战",
+                "收集金环的蓝色刺猬",
+                "被困在同一天的人",
+                "拥有杀人笔记本的少年",
+                "教农场男孩的绿色小外星人",
+                "寻找儿子的鱼"
+            ]
+        },
+        de: { title: "Was hab ich gesehen?", subtitle: "Beschreibe einen Film, eine Serie, einen Cartoon oder Anime mit eigenen Worten\nund die KI findet es für dich", label: "Beschreibe, woran du dich erinnerst", placeholder: "z.B. Da gab es diesen Cartoon, den ich als Kind gesehen habe, wo Kinder mit Kreiseln gekämpft haben...", findBtn: "Suchen", searching: "Suche...", examples: "Probier ein Beispiel:", chars: "Zeichen", thinking: "KI denkt nach...", thinkingSub: "Analysiere deine Beschreibung", found: "Das habe ich gefunden", match: "Ergebnis", matches: "Ergebnisse", noMatch: "Kein Ergebnis", noMatchSub: "Versuche mehr Details hinzuzufügen!", moreDetail: "Schreib etwas mehr!", listening: "Höre zu... sprich jetzt", voiceUnsupported: "Spracheingabe wird nicht unterstützt", bestMatch: "BESTER TREFFER", noPoster: "Kein Poster", pills: ["Kinder mit Kampfkreiseln", "blauer Igel sammelt Ringe", "Typ steckt im selben Tag fest", "Jugendliche mit Notizbüchern die töten", "kleiner grüner Alien unterrichtet Jungen", "Fisch sucht seinen Sohn"] },
+        pt: { title: "O que eu assisti?", subtitle: "Descreva um filme, série, desenho ou anime com suas palavras\ne a IA vai encontrar pra você", label: "Descreva o que você lembra", placeholder: "ex. Tinha um desenho que eu assistia quando era criança onde crianças tinham piões que lutavam...", findBtn: "Buscar", searching: "Buscando...", examples: "Tente um exemplo:", chars: "caracteres", thinking: "IA pensando...", thinkingSub: "Analisando sua descrição", found: "Aqui está o que encontrei", match: "resultado", matches: "resultados", noMatch: "Nenhum resultado", noMatchSub: "Tente adicionar mais detalhes!", moreDetail: "Escreva um pouco mais!", listening: "Ouvindo... fale agora", voiceUnsupported: "Entrada de voz não suportada", bestMatch: "MELHOR RESULTADO", noPoster: "Sem pôster", pills: ["crianças com piões de batalha", "ouriço azul coletando anéis", "cara preso no mesmo dia", "adolescentes com cadernos que matam", "alien verde pequeno ensinando garoto", "peixe procurando seu filho"] },
+        it: { title: "Cosa ho visto?", subtitle: "Descrivi un film, una serie, un cartone o un anime con le tue parole\ne l'IA lo troverà per te", label: "Descrivi cosa ricordi", placeholder: "es. C'era un cartone che guardavo da bambino dove i ragazzi avevano delle trottole che combattevano...", findBtn: "Cerca", searching: "Cercando...", examples: "Prova un esempio:", chars: "caratteri", thinking: "L'IA sta pensando...", thinkingSub: "Analizzando la tua descrizione", found: "Ecco cosa ho trovato", match: "risultato", matches: "risultati", noMatch: "Nessun risultato", noMatchSub: "Prova ad aggiungere più dettagli!", moreDetail: "Scrivi un po' di più!", listening: "Ascoltando... parla ora", voiceUnsupported: "Input vocale non supportato", bestMatch: "MIGLIORE RISULTATO", noPoster: "Nessun poster", pills: ["bambini con trottole da battaglia", "riccio blu che raccoglie anelli", "uomo bloccato nello stesso giorno", "adolescenti con quaderni che uccidono", "piccolo alieno verde insegna a un ragazzo", "pesce che cerca suo figlio"] },
+        ru: { title: "Что я смотрел?", subtitle: "Опишите фильм, сериал, мультфильм или аниме своими словами\nи ИИ найдёт его для вас", label: "Опишите то, что помните", placeholder: "напр. Был мультик, который я смотрел в детстве, где дети запускали волчки, которые сражались друг с другом...", findBtn: "Найти", searching: "Поиск...", examples: "Попробуйте пример:", chars: "символов", thinking: "ИИ думает...", thinkingSub: "Анализирую ваше описание", found: "Вот что я нашёл", match: "результат", matches: "результатов", noMatch: "Ничего не найдено", noMatchSub: "Попробуйте добавить больше деталей!", moreDetail: "Напишите чуть больше!", listening: "Слушаю... говорите сейчас", voiceUnsupported: "Голосовой ввод не поддерживается", bestMatch: "ЛУЧШИЙ РЕЗУЛЬТАТ", noPoster: "Нет постера", pills: ["дети с боевыми волчками", "синий ёж собирает кольца", "парень застрял в одном дне", "подростки с тетрадями убивают людей", "маленький зелёный инопланетянин учит мальчика", "рыба ищет сына"] },
+        hi: { title: "मैंने क्या देखा?", subtitle: "अपने शब्दों में किसी फिल्म, टीवी शो, कार्टून या एनीमे का वर्णन करें\nAI आपके लिए ढूंढ लेगा", label: "जो याद है वो बताइए", placeholder: "जैसे: बचपन में एक कार्टून देखता था जिसमें बच्चे लट्टू से लड़ाई करते थे...", findBtn: "खोजें", searching: "खोज रहा है...", examples: "एक उदाहरण आजमाएं:", chars: "अक्षर", thinking: "AI सोच रहा है...", thinkingSub: "आपके विवरण का विश्लेषण कर रहा है", found: "यह मिला", match: "नतीजा", matches: "नतीजे", noMatch: "कोई नतीजा नहीं मिला", noMatchSub: "और विवरण जोड़ने की कोशिश करें!", moreDetail: "कृपया थोड़ा और लिखें!", listening: "सुन रहा है... अब बोलिए", voiceUnsupported: "इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है", bestMatch: "सबसे अच्छा मैच", noPoster: "कोई पोस्टर नहीं", pills: ["लट्टू से लड़ने वाले बच्चे", "अंगूठियां इकट्ठा करने वाला नीला हेजहॉग", "एक ही दिन में फंसा आदमी", "नोटबुक से लोगों को मारने वाले किशोर", "एक लड़के को सिखाने वाला छोटा हरा एलियन", "अपने बेटे को ढूंढने वाली मछली"] },
+        tr: { title: "Ne İzledim?", subtitle: "Bir film, dizi, çizgi film veya animeyi kendi kelimelerinle anlat\nYapay zeka senin için bulacak", label: "Hatırladığını anlat", placeholder: "ör. Çocukken izlediğim bir çizgi film vardı, topaçlarla savaşan çocuklar...", findBtn: "Bul", searching: "Aranıyor...", examples: "Bir örnek dene:", chars: "karakter", thinking: "AI düşünüyor...", thinkingSub: "Açıklaman analiz ediliyor", found: "İşte bulduklarım", match: "sonuç", matches: "sonuç", noMatch: "Sonuç bulunamadı", noMatchSub: "Daha fazla detay eklemeyi dene!", moreDetail: "Biraz daha yaz!", listening: "Dinliyor... şimdi konuş", voiceUnsupported: "Sesli giriş desteklenmiyor", bestMatch: "EN İYİ SONUÇ", noPoster: "Poster yok", pills: ["savaş topaçları olan çocuklar", "yüzük toplayan mavi kirpi", "aynı günde takılıp kalan adam", "insanları öldüren defterli gençler", "çiftçi çocuğa öğreten küçük yeşil uzaylı", "oğlunu arayan balık"] },
+        id: { title: "Apa yang Kutonton?", subtitle: "Deskripsikan film, acara TV, kartun, atau anime dengan kata-katamu\ndan AI akan menemukannya", label: "Deskripsikan yang kamu ingat", placeholder: "mis. Ada kartun waktu kecil tentang anak-anak yang punya gasing untuk bertarung...", findBtn: "Cari", searching: "Mencari...", examples: "Coba contoh:", chars: "karakter", thinking: "AI sedang berpikir...", thinkingSub: "Menganalisis deskripsimu", found: "Ini yang kutemukan", match: "hasil", matches: "hasil", noMatch: "Tidak ada hasil", noMatchSub: "Coba tambahkan detail!", moreDetail: "Tulis lebih banyak!", listening: "Mendengarkan... bicara sekarang", voiceUnsupported: "Input suara tidak didukung", bestMatch: "HASIL TERBAIK", noPoster: "Tidak ada poster", pills: ["anak-anak dengan gasing bertarung", "landak biru mengumpulkan cincin", "pria terjebak di hari yang sama", "remaja dengan buku catatan pembunuh", "alien hijau kecil mengajari anak", "ikan mencari anaknya"] },
+        th: { title: "ดูอะไรมา?", subtitle: "อธิบายหนัง ซีรีส์ การ์ตูน หรืออนิเมะด้วยคำพูดของคุณเอง\nAI จะค้นหาให้คุณ", label: "อธิบายสิ่งที่จำได้", placeholder: "เช่น มีการ์ตูนที่ดูตอนเด็กๆ เกี่ยวกับเด็กๆ ที่มีลูกข่างต่อสู้กัน...", findBtn: "ค้นหา", searching: "กำลังค้นหา...", examples: "ลองตัวอย่าง:", chars: "ตัวอักษร", thinking: "AI กำลังคิด...", thinkingSub: "กำลังวิเคราะห์คำอธิบายของคุณ", found: "นี่คือสิ่งที่พบ", match: "ผลลัพธ์", matches: "ผลลัพธ์", noMatch: "ไม่พบผลลัพธ์", noMatchSub: "ลองเพิ่มรายละเอียดเพิ่มเติม!", moreDetail: "เขียนเพิ่มอีกหน่อย!", listening: "กำลังฟัง... พูดได้เลย", voiceUnsupported: "เบราว์เซอร์นี้ไม่รองรับการป้อนเสียง", bestMatch: "ผลลัพธ์ที่ดีที่สุด", noPoster: "ไม่มีโปสเตอร์", pills: ["เด็กๆ กับลูกข่างต่อสู้", "เม่นสีน้ำเงินเก็บแหวน", "ผู้ชายติดอยู่ในวันเดิม", "วัยรุ่นกับสมุดฆ่าคน", "มนุษย์ต่างดาวเขียวสอนเด็ก", "ปลาตามหาลูก"] },
+        vi: { title: "Tôi đã xem gì?", subtitle: "Mô tả phim, chương trình TV, hoạt hình hoặc anime bằng lời của bạn\nvà AI sẽ tìm cho bạn", label: "Mô tả những gì bạn nhớ", placeholder: "VD: Hồi nhỏ có xem phim hoạt hình về mấy đứa trẻ có con quay chiến đấu...", findBtn: "Tìm", searching: "Đang tìm...", examples: "Thử một ví dụ:", chars: "ký tự", thinking: "AI đang suy nghĩ...", thinkingSub: "Đang phân tích mô tả của bạn", found: "Đây là kết quả", match: "kết quả", matches: "kết quả", noMatch: "Không tìm thấy", noMatchSub: "Hãy thêm chi tiết!", moreDetail: "Viết thêm một chút!", listening: "Đang nghe... hãy nói", voiceUnsupported: "Trình duyệt không hỗ trợ nhập giọng nói", bestMatch: "KẾT QUẢ TỐT NHẤT", noPoster: "Không có poster", pills: ["trẻ em với con quay chiến đấu", "nhím xanh thu thập nhẫn", "người đàn ông mắc kẹt trong ngày lặp lại", "thiếu niên với cuốn sổ giết người", "người ngoài hành tinh xanh dạy cậu bé", "cá tìm con trai"] },
+        pl: { title: "Co oglądałem?", subtitle: "Opisz film, serial, kreskówkę lub anime własnymi słowami\na AI znajdzie to za ciebie", label: "Opisz co pamiętasz", placeholder: "np. Była taka kreskówka z dzieciństwa gdzie dzieci miały bąki które ze sobą walczyły...", findBtn: "Szukaj", searching: "Szukam...", examples: "Spróbuj przykładu:", chars: "znaków", thinking: "AI myśli...", thinkingSub: "Analizuję twój opis", found: "Oto co znalazłem", match: "wynik", matches: "wyników", noMatch: "Nie znaleziono", noMatchSub: "Dodaj więcej szczegółów!", moreDetail: "Napisz trochę więcej!", listening: "Słucham... mów teraz", voiceUnsupported: "Wprowadzanie głosowe nie jest obsługiwane", bestMatch: "NAJLEPSZY WYNIK", noPoster: "Brak plakatu", pills: ["dzieci z bąkami bojowymi", "niebieski jeż zbierający pierścienie", "facet utknął w tym samym dniu", "nastolatkowie z zeszytami zabijającymi ludzi", "mały zielony kosmita uczy chłopca", "ryba szuka syna"] },
+        nl: { title: "Wat heb ik gekeken?", subtitle: "Beschrijf een film, serie, cartoon of anime in je eigen woorden\nen AI vindt het voor je", label: "Beschrijf wat je je herinnert", placeholder: "bijv. Er was een tekenfilm die ik als kind keek waar kinderen met tollen vochten...", findBtn: "Zoeken", searching: "Zoeken...", examples: "Probeer een voorbeeld:", chars: "tekens", thinking: "AI denkt na...", thinkingSub: "Je beschrijving analyseren", found: "Dit heb ik gevonden", match: "resultaat", matches: "resultaten", noMatch: "Geen resultaat", noMatchSub: "Probeer meer details toe te voegen!", moreDetail: "Schrijf iets meer!", listening: "Luisteren... spreek nu", voiceUnsupported: "Spraakinvoer niet ondersteund", bestMatch: "BESTE RESULTAAT", noPoster: "Geen poster", pills: ["kinderen met gevechtstollen", "blauwe egel verzamelt ringen", "man vast in dezelfde dag", "tieners met dodelijke notitieboeken", "kleine groene alien leert jongen", "vis zoekt zijn zoon"] },
+        sv: { title: "Vad såg jag?", subtitle: "Beskriv en film, TV-serie, tecknad serie eller anime med egna ord\noch AI hittar den åt dig", label: "Beskriv vad du minns", placeholder: "t.ex. Det var en tecknad serie jag tittade på som barn där barn hade snurror som stred...", findBtn: "Sök", searching: "Söker...", examples: "Prova ett exempel:", chars: "tecken", thinking: "AI tänker...", thinkingSub: "Analyserar din beskrivning", found: "Här är vad jag hittade", match: "resultat", matches: "resultat", noMatch: "Inget resultat", noMatchSub: "Försök lägga till fler detaljer!", moreDetail: "Skriv lite mer!", listening: "Lyssnar... tala nu", voiceUnsupported: "Röstinmatning stöds inte", bestMatch: "BÄSTA RESULTAT", noPoster: "Ingen affisch", pills: ["barn med stridssnurror", "blå igelkott samlar ringar", "kille fast i samma dag", "tonåringar med dödande anteckningsböcker", "liten grön alien lär pojke", "fisk letar efter sin son"] },
+    };
+
+    // RTL languages
+    const rtlLangs = ['ar', 'fa', 'he', 'ur'];
+
+    // Speech recognition language codes
+    const speechLangMap = {
+        en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', pt: 'pt-BR',
+        it: 'it-IT', ru: 'ru-RU', ar: 'ar-SA', fa: 'fa-IR', hi: 'hi-IN',
+        zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', tr: 'tr-TR', id: 'id-ID',
+        th: 'th-TH', vi: 'vi-VN', pl: 'pl-PL', nl: 'nl-NL', sv: 'sv-SE',
+    };
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let currentLang = 'en';
+    let isLoading = false;
+    let recognition = null;
+    let isRecording = false;
+
+    const textarea = document.getElementById('description');
+    const charCount = document.getElementById('charCount');
+    const searchBtn = document.getElementById('searchBtn');
+    const btnText = document.getElementById('btnText');
+    const resultsDiv = document.getElementById('results');
+    const voiceBtn = document.getElementById('voiceBtn');
+    const voiceStatus = document.getElementById('voiceStatus');
+    const voiceStatusText = document.getElementById('voiceStatusText');
+    const detectedLang = document.getElementById('detectedLang');
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    function init() {
+        // Auto-detect language from browser
+        const browserLang = navigator.language.split('-')[0];
+        if (i18n[browserLang]) {
+            currentLang = browserLang;
+            document.getElementById('langSelect').value = browserLang;
+        }
+
+        applyLanguage(currentLang);
+        initVoice();
+
+        textarea.addEventListener('input', () => {
+            const t = i18n[currentLang];
+            charCount.textContent = `${textarea.value.length} ${t.chars}`;
+        });
+
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) doSearch();
+        });
+    }
+
+    // ── Language ──────────────────────────────────────────────────────────────
+    function changeLanguage(lang) {
+        currentLang = lang;
+        applyLanguage(lang);
+    }
+
+    function applyLanguage(lang) {
+        const t = i18n[lang];
+        if (!t) return;
+
+        // RTL
+        const isRtl = rtlLangs.includes(lang);
+        document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+        document.documentElement.lang = lang;
+
+        // Update text
+        document.getElementById('titleText').textContent = t.title;
+        document.getElementById('subtitleText').innerHTML = t.subtitle.replace('\n', '<br>');
+        document.getElementById('searchLabel').textContent = t.label;
+        textarea.placeholder = t.placeholder;
+        btnText.textContent = t.findBtn;
+        document.getElementById('examplesLabel').textContent = t.examples;
+        charCount.textContent = `${textarea.value.length} ${t.chars}`;
+
+        // Example pills
+        const pillsContainer = document.getElementById('pillsContainer');
+        pillsContainer.innerHTML = t.pills.map(p =>
+            `<div class="pill" onclick="useExample(this)">${p}</div>`
+        ).join('');
+
+        // Update voice recognition language
+        if (recognition) {
+            recognition.lang = speechLangMap[lang] || lang;
+        }
+    }
+
+    function useExample(el) {
+        textarea.value = el.textContent;
+        const t = i18n[currentLang];
+        charCount.textContent = `${textarea.value.length} ${t.chars}`;
+        textarea.focus();
+    }
+
+    // ── Voice Input ──────────────────────────────────────────────────────────
+    function initVoice() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            voiceBtn.classList.add('unsupported');
+            voiceBtn.title = i18n[currentLang].voiceUnsupported;
+            return;
+        }
+
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = speechLangMap[currentLang] || currentLang;
+
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            // If we have a final transcript, append to existing text
+            if (finalTranscript) {
+                const current = textarea.value;
+                const separator = current && !current.endsWith(' ') ? ' ' : '';
+                textarea.value = current + separator + finalTranscript;
+            }
+
+            // Show interim in a subtle way
+            if (interimTranscript) {
+                voiceStatusText.textContent = interimTranscript;
+            }
+
+            const t = i18n[currentLang];
+            charCount.textContent = `${textarea.value.length} ${t.chars}`;
+        };
+
+        recognition.onerror = (event) => {
+            console.log('Speech error:', event.error);
+            if (event.error === 'not-allowed') {
+                showError(i18n[currentLang].voiceUnsupported);
+            }
+            stopRecording();
+        };
+
+        recognition.onend = () => {
+            if (isRecording) {
+                // Auto-restart if still recording (handles browser timeouts)
+                try { recognition.start(); } catch(e) { stopRecording(); }
+            }
+        };
+    }
+
+    function toggleVoice() {
+        if (voiceBtn.classList.contains('unsupported')) {
+            showError(i18n[currentLang].voiceUnsupported);
+            return;
+        }
+
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    }
+
+    function startRecording() {
+        if (!recognition) return;
+
+        isRecording = true;
+        recognition.lang = speechLangMap[currentLang] || currentLang;
+
+        try {
+            recognition.start();
+        } catch(e) {
+            // Already started
+        }
+
+        voiceBtn.classList.add('recording');
+        document.getElementById('micIcon').style.display = 'none';
+        document.getElementById('stopIcon').style.display = 'block';
+        voiceStatus.classList.add('active');
+        voiceStatusText.textContent = i18n[currentLang].listening;
+    }
+
+    function stopRecording() {
+        isRecording = false;
+
+        if (recognition) {
+            try { recognition.stop(); } catch(e) {}
+        }
+
+        voiceBtn.classList.remove('recording');
+        document.getElementById('micIcon').style.display = 'block';
+        document.getElementById('stopIcon').style.display = 'none';
+        voiceStatus.classList.remove('active');
+    }
+
+    // ── Search ───────────────────────────────────────────────────────────────
+    async function doSearch() {
+        const description = textarea.value.trim();
+        const t = i18n[currentLang];
+        if (!description || isLoading) return;
+
+        // Stop recording if active
+        if (isRecording) stopRecording();
+
+        if (description.length < 10) {
+            showError(t.moreDetail);
+            return;
+        }
+
+        isLoading = true;
+        searchBtn.disabled = true;
+        btnText.innerHTML = `<div class="spinner"></div> ${t.searching}`;
+
+        resultsDiv.innerHTML = `
+            <div class="loading-state">
+                <div class="loading-animation">
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                </div>
+                <div class="loading-text">${t.thinking}</div>
+                <div class="loading-subtext">${t.thinkingSub}</div>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description, language: currentLang }),
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                showError(data.error || "Something went wrong");
+                return;
+            }
+
+            if (!data.matches || data.matches.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🤔</div>
+                        <h3>${t.noMatch}</h3>
+                        <p>${t.noMatchSub}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            renderResults(data.matches);
+
+        } catch (err) {
+            showError("Could not connect to the server. Make sure the app is running.");
+        } finally {
+            isLoading = false;
+            searchBtn.disabled = false;
+            btnText.textContent = t.findBtn;
+        }
+    }
+
+    function showError(message) {
+        resultsDiv.innerHTML = `
+            <div class="error-box">
+                <span style="font-size:1.5rem">⚠️</span>
+                <span>${message}</span>
+            </div>
+        `;
+    }
+
+    function renderResults(matches) {
+        const t = i18n[currentLang];
+        const count = matches.length;
+        const countLabel = count === 1 ? `1 ${t.match}` : `${count} ${t.matches}`;
+
+        let html = `
+            <div class="results-section">
+                <div class="results-header">
+                    <h2>${t.found}</h2>
+                    <span class="count">${countLabel}</span>
+                </div>
+        `;
+
+        matches.forEach((match, i) => {
+            const isBest = i === 0 && match.confidence === 'high';
+            const typeEmoji = { movie: '🎥', tv: '📺', cartoon: '🖍️', anime: '⛩️' }[match.type] || '🎬';
+
+            html += `
+                <div class="result-card ${isBest ? 'best-match' : ''}" style="animation-delay: ${i * 0.1}s">
+                    ${isBest ? `<div class="best-match-tag">🎯 ${t.bestMatch}</div>` : ''}
+                    <div class="card-inner">
+                        <div class="card-poster">
+                            ${match.poster_url
+                                ? `<img src="${match.poster_url}" alt="${match.title}" loading="lazy">`
+                                : `<div class="no-poster">${typeEmoji}<span>${t.noPoster}</span></div>`
+                            }
+                        </div>
+                        <div class="card-content">
+                            <div class="card-top">
+                                <div class="card-title">${match.title}</div>
+                                <span class="confidence-badge confidence-${match.confidence}">${match.confidence}</span>
+                            </div>
+                            <div class="card-meta">
+                                <span class="type-badge">${typeEmoji} ${match.type}</span>
+                                ${match.year ? `<span class="meta-tag">📅 ${match.year}</span>` : ''}
+                                ${match.rating ? `<span class="meta-tag">⭐ ${match.rating.toFixed(1)}/10</span>` : ''}
+                            </div>
+                            <div class="card-explanation">💡 ${match.explanation}</div>
+                            ${match.overview ? `<div class="card-overview">${match.overview}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        resultsDiv.innerHTML = html;
+    }
+
+    // Go!
+    init();
+    </script>
+</body>
+</html>
