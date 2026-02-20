@@ -180,25 +180,20 @@ def search_tmdb(query: str, media_type: str = None) -> Optional[dict]:
 
 
 def build_watch_links(title, year=None, media_type="movie"):
-    """Build affiliate-ready links for watching/buying the title."""
+    """Build links for watching/finding the title."""
     from urllib.parse import quote_plus
     q = quote_plus(title)
     q_year = quote_plus(f"{title} {year}") if year else q
 
     # AMAZON_AFFILIATE_TAG: Sign up at https://affiliate-program.amazon.com
-    # Replace 'YOUR_TAG-20' with your actual Amazon Associates tag
     amazon_tag = os.environ.get("AMAZON_AFFILIATE_TAG", "")
     amazon_suffix = f"&tag={amazon_tag}" if amazon_tag else ""
-
-    # APPLE_AFFILIATE_TOKEN: Sign up at https://performance-partners.apple.com
-    apple_token = os.environ.get("APPLE_AFFILIATE_TOKEN", "")
-    apple_suffix = f"&at={apple_token}" if apple_token else ""
 
     return {
         "justwatch": f"https://www.justwatch.com/us/search?q={q}",
         "amazon": f"https://www.amazon.com/s?k={q_year}&i=instant-video{amazon_suffix}",
-        "apple_tv": f"https://tv.apple.com/search?term={q}{apple_suffix}",
-        "youtube": f"https://www.youtube.com/results?search_query={q_year}+full+movie",
+        "apple_tv": f"https://tv.apple.com/search?term={q}",
+        "youtube": f"https://www.youtube.com/results?search_query={q_year}+full+{media_type}",
         "google": f"https://www.google.com/search?q=watch+{q_year}+online",
     }
 
