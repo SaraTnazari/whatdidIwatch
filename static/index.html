@@ -657,6 +657,30 @@
         .footer { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 0.8rem; }
         .footer a { color: var(--accent-light); text-decoration: none; }
 
+        .coffee-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: #FFDD00;
+            color: #000;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
+        }
+
+        .coffee-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 221, 0, 0.3);
+            background: #ffea57;
+        }
+
+        .coffee-btn img { height: 20px; }
+
         /* ── Responsive ── */
         @media (max-width: 640px) {
             h1 { font-size: 2rem; }
@@ -763,6 +787,10 @@
 
         <!-- Footer -->
         <footer class="footer">
+            <a href="https://buymeacoffee.com/B4AFcTjyaj" target="_blank" rel="noopener" class="coffee-btn">
+                ☕ Buy me a coffee
+            </a>
+            <br>
             Powered by Claude AI &amp; TMDB &middot;
             <a href="https://www.themoviedb.org" target="_blank">Movie data from TMDB</a>
         </footer>
