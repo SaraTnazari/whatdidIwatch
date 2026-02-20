@@ -179,6 +179,30 @@ def search_tmdb(query: str, media_type: str = None) -> Optional[dict]:
         return None
 
 
+def build_watch_links(title, year=None, media_type="movie"):
+    """Build affiliate-ready links for watching/buying the title."""
+    from urllib.parse import quote_plus
+    q = quote_plus(title)
+    q_year = quote_plus(f"{title} {year}") if year else q
+
+    # AMAZON_AFFILIATE_TAG: Sign up at https://affiliate-program.amazon.com
+    # Replace 'YOUR_TAG-20' with your actual Amazon Associates tag
+    amazon_tag = os.environ.get("AMAZON_AFFILIATE_TAG", "")
+    amazon_suffix = f"&tag={amazon_tag}" if amazon_tag else ""
+
+    # APPLE_AFFILIATE_TOKEN: Sign up at https://performance-partners.apple.com
+    apple_token = os.environ.get("APPLE_AFFILIATE_TOKEN", "")
+    apple_suffix = f"&at={apple_token}" if apple_token else ""
+
+    return {
+        "justwatch": f"https://www.justwatch.com/us/search?q={q}",
+        "amazon": f"https://www.amazon.com/s?k={q_year}&i=instant-video{amazon_suffix}",
+        "apple_tv": f"https://tv.apple.com/search?term={q}{apple_suffix}",
+        "youtube": f"https://www.youtube.com/results?search_query={q_year}+full+movie",
+        "google": f"https://www.google.com/search?q=watch+{q_year}+online",
+    }
+
+
 # ── API Routes ─────────────────────────────────────────────────────────────────
 
 @app.route("/api/search", methods=["POST"])
@@ -214,6 +238,11 @@ def search():
             else:
                 print(f"[TMDB] No result for query '{search_query}'")
 
+            # Build watch/affiliate links
+            link_title = tmdb_data["title"] if tmdb_data else match.get("title", "")
+            link_year = match.get("year")
+            watch_links = build_watch_links(link_title, link_year, match.get("type", "movie"))
+
             enriched.append({
                 "title": match.get("title", "Unknown"),
                 "year": match.get("year"),
@@ -225,6 +254,7 @@ def search():
                 "overview": tmdb_data["overview"] if tmdb_data else "",
                 "rating": tmdb_data["rating"] if tmdb_data else None,
                 "tmdb_title": tmdb_data["title"] if tmdb_data else None,
+                "watch_links": watch_links,
             })
 
         return jsonify({"matches": enriched})

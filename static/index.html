@@ -533,6 +533,69 @@
 
         .card-overview { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; flex: 1; }
 
+        /* ── Watch Links ── */
+        .watch-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .watch-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border);
+        }
+
+        .watch-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .watch-link.justwatch {
+            background: rgba(252, 208, 0, 0.1);
+            color: #fcd000;
+            border-color: rgba(252, 208, 0, 0.3);
+        }
+        .watch-link.justwatch:hover { background: rgba(252, 208, 0, 0.2); }
+
+        .watch-link.amazon {
+            background: rgba(255, 153, 0, 0.1);
+            color: #ff9900;
+            border-color: rgba(255, 153, 0, 0.3);
+        }
+        .watch-link.amazon:hover { background: rgba(255, 153, 0, 0.2); }
+
+        .watch-link.apple {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .watch-link.apple:hover { background: rgba(255, 255, 255, 0.1); }
+
+        .watch-link.youtube {
+            background: rgba(255, 0, 0, 0.08);
+            color: #ff4444;
+            border-color: rgba(255, 0, 0, 0.2);
+        }
+        .watch-link.youtube:hover { background: rgba(255, 0, 0, 0.15); }
+
+        .watch-link.google {
+            background: rgba(66, 133, 244, 0.08);
+            color: #4285f4;
+            border-color: rgba(66, 133, 244, 0.2);
+        }
+        .watch-link.google:hover { background: rgba(66, 133, 244, 0.15); }
+
         /* ── Best Match ── */
         .best-match { border-color: rgba(139, 92, 246, 0.4); position: relative; }
         .best-match-tag {
@@ -1273,6 +1336,15 @@
                             </div>
                             <div class="card-explanation">💡 ${match.explanation}</div>
                             ${match.overview ? `<div class="card-overview">${match.overview}</div>` : ''}
+                            ${match.watch_links ? `
+                            <div class="watch-links">
+                                <a href="${match.watch_links.justwatch}" target="_blank" rel="noopener" class="watch-link justwatch">📺 JustWatch</a>
+                                <a href="${match.watch_links.amazon}" target="_blank" rel="noopener" class="watch-link amazon">🛒 Amazon</a>
+                                <a href="${match.watch_links.apple_tv}" target="_blank" rel="noopener" class="watch-link apple">🍎 Apple TV</a>
+                                <a href="${match.watch_links.youtube}" target="_blank" rel="noopener" class="watch-link youtube">▶️ YouTube</a>
+                                <a href="${match.watch_links.google}" target="_blank" rel="noopener" class="watch-link google">🔍 Google</a>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
