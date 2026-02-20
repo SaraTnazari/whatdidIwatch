@@ -29,7 +29,8 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-app = Flask(__name__, static_folder="static")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, static_folder=os.path.join(BASE_DIR, "static"))
 
 # ── Claude API client ──────────────────────────────────────────────────────────
 client = anthropic.Anthropic()  # Uses ANTHROPIC_API_KEY env var
@@ -76,7 +77,7 @@ def extract_json_array(text: str) -> list:
     raise json.JSONDecodeError("Could not find valid JSON array", text, 0)
 
 
-def identify_with_claude(description: str, language: str = "en") -> list[dict]:
+def identify_with_claude(description: str, language: str = "en") -> list:
     """Use Claude to identify shows/movies from a vague description."""
 
     # Language names for the prompt
