@@ -281,4 +281,5 @@ if __name__ == "__main__":
     print(f"\n  Using Claude model: {CLAUDE_MODEL}")
     print("  TMDB API: " + ("Enabled" if TMDB_API_KEY else "Disabled (no posters)"))
     print("\n  What Did I Watch? is running at http://localhost:8080\n")
-    app.run(debug=True, port=8080)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(debug=True, host="0.0.0.0", port=port)

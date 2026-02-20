@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: whatdidiwatch
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
+      - key: PORT
+        value: 10000
