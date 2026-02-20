@@ -3,11 +3,9 @@ services:
     name: whatdidiwatch
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --preload
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: TMDB_API_KEY
         sync: false
-      - key: PORT
-        value: 10000
