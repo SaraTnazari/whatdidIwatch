@@ -31,6 +31,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024  # 16KB max request size
 
 # ── Config ────────────────────────────────────────────────────────────────────
 client = anthropic.Anthropic()
@@ -323,4 +324,4 @@ if __name__ == "__main__":
     print(f"\n  Backend running at http://localhost:8080\n")
 
     port = int(os.environ.get("PORT", 8080))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    app.run(debug=False, host="0.0.0.0", port=port)
