@@ -206,7 +206,7 @@ def build_watch_links(title, year=None, media_type="movie"):
     q_year = quote_plus(f"{title} {year}") if year else q
     return {
         "justwatch": f"https://www.justwatch.com/us/search?q={q}",
-        "amazon": f"https://www.amazon.com/s?k={q_year}&i=instant-video",
+        "amazon": f"https://www.amazon.com/s?k={q_year}&i=instant-video&tag=whatdidiwatch-20",
         "apple_tv": f"https://tv.apple.com/search?term={q}",
         "youtube": f"https://www.youtube.com/results?search_query={q_year}+full+{media_type}",
         "google": f"https://www.google.com/search?q=watch+{q_year}+online",
