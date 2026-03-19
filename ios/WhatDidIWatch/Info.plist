@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>What Did I Watch needs microphone access so you can describe movies and shows by speaking instead of typing.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>What Did I Watch uses speech recognition to convert your spoken descriptions into text for searching.</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+</dict>
+</plist>
