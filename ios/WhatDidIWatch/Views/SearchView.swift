@@ -22,6 +22,7 @@ struct SearchView: View {
                     .blur(radius: 80).opacity(0.10)
                     .offset(x: -100, y: 400)
 
+                ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(spacing: 0) {
                         // Header
@@ -160,16 +161,23 @@ struct SearchView: View {
                         // Results
                         if vm.hasSearched && !vm.isLoading {
                             ResultsSection()
+                                .id("results")
                         }
 
-                        Text("Powered by Claude AI & TMDB")
-                            .font(.caption2).foregroundColor(Color(white: 0.35))
-                            .padding(.vertical, 40)
+                        Spacer().frame(height: 40)
                     }
                     .padding(.horizontal, 20)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onTapGesture { isTextEditorFocused = false }
+                .onChange(of: vm.hasSearched) { _, hasResults in
+                    if hasResults && !vm.isLoading {
+                        withAnimation(.easeOut(duration: 0.5)) {
+                            scrollProxy.scrollTo("results", anchor: .top)
+                        }
+                    }
+                }
+                } // end ScrollViewReader
             }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
