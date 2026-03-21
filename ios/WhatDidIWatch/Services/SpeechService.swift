@@ -13,23 +13,35 @@ class SpeechService: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
 
-    func requestAuthorization() {
-        SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            Task { @MainActor in
-                self?.isAuthorized = (status == .authorized)
+    func requestAuthorization() async -> Bool {
+        return await withCheckedContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { [weak self] status in
+                Task { @MainActor in
+                    let authorized = (status == .authorized)
+                    self?.isAuthorized = authorized
+                    continuation.resume(returning: authorized)
+                }
             }
         }
     }
 
-    func startRecording(language: String = "en") {
-        guard isAuthorized else {
-            requestAuthorization()
-            return
+    func startRecording(language: String = "en") async -> Bool {
+        // Request authorization if not already authorized
+        if !isAuthorized {
+            let granted = await requestAuthorization()
+            if !granted {
+                return false
+            }
         }
+
+        // Also need microphone permission
+        let micGranted = await AVAudioApplication.requestRecordPermission()
+        guard micGranted else { return false }
 
         stopRecording()
 
         recognizer = SFSpeechRecognizer(locale: Locale(identifier: language))
+        guard recognizer?.isAvailable == true else { return false }
 
         let audioSession = AVAudioSession.sharedInstance()
         do {
@@ -37,11 +49,11 @@ class SpeechService: ObservableObject {
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Audio session error: \(error)")
-            return
+            return false
         }
 
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let recognitionRequest = recognitionRequest else { return }
+        guard let recognitionRequest = recognitionRequest else { return false }
         recognitionRequest.shouldReportPartialResults = true
 
         recognitionTask = recognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
@@ -65,8 +77,10 @@ class SpeechService: ObservableObject {
         do {
             try audioEngine.start()
             isRecording = true
+            return true
         } catch {
             print("Audio engine error: \(error)")
+            return false
         }
     }
 

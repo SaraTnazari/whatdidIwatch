@@ -16,7 +16,7 @@ class SearchViewModel: ObservableObject {
     @Published var isRecording = false
 
     let storeService = StoreService()
-    private let speechService = SpeechService()
+    let speechService = SpeechService()
     private var speechCancellable: AnyCancellable?
 
     init() {
@@ -35,19 +35,21 @@ class SearchViewModel: ObservableObject {
             speechCancellable?.cancel()
             speechCancellable = nil
         } else {
-            speechService.requestAuthorization()
-            speechService.transcribedText = ""
-            speechService.startRecording(language: selectedLanguage.code)
-            isRecording = true
-
-            // Live update query with transcription
-            speechCancellable = speechService.$transcribedText
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] text in
-                    if !text.isEmpty {
-                        self?.query = text
-                    }
+            Task {
+                // Start recording (handles auth automatically)
+                let started = await speechService.startRecording(language: selectedLanguage.code)
+                if started {
+                    isRecording = true
+                    // Live update query with transcription
+                    speechCancellable = speechService.$transcribedText
+                        .receive(on: DispatchQueue.main)
+                        .sink { [weak self] text in
+                            if !text.isEmpty {
+                                self?.query = text
+                            }
+                        }
                 }
+            }
         }
     }
 

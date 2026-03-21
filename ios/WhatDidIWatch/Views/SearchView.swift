@@ -50,7 +50,7 @@ struct SearchView: View {
                                 .foregroundColor(Color(red: 0.655, green: 0.545, blue: 0.980))
                                 .tracking(1.5)
 
-                            ZStack(alignment: .topTrailing) {
+                            ZStack(alignment: .topLeading) {
                                 TextEditor(text: $vm.query)
                                     .focused($isTextEditorFocused)
                                     .frame(minHeight: 100, maxHeight: 160)
@@ -58,29 +58,13 @@ struct SearchView: View {
                                     .foregroundColor(.white)
                                     .font(.body)
 
-                                // Microphone button
-                                Button(action: { vm.toggleRecording() }) {
-                                    Image(systemName: vm.isRecording ? "mic.fill" : "mic")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(vm.isRecording ? Color(red: 0.925, green: 0.286, blue: 0.6) : Color(white: 0.5))
-                                        .padding(8)
-                                        .background(
-                                            Circle()
-                                                .fill(vm.isRecording ? Color(red: 0.925, green: 0.286, blue: 0.6).opacity(0.15) : Color.clear)
-                                        )
-                                        .scaleEffect(vm.isRecording ? 1.1 : 1.0)
-                                        .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: vm.isRecording)
+                                if vm.query.isEmpty && !vm.isRecording {
+                                    Text("e.g. There was this cartoon I watched as a kid where kids had spinning tops that battled each other...")
+                                        .foregroundColor(Color(white: 0.3))
+                                        .font(.body)
+                                        .allowsHitTesting(false)
+                                        .padding(.top, 8).padding(.leading, 5)
                                 }
-                                .buttonStyle(.plain)
-                                .padding(.top, 4).padding(.trailing, 4)
-                            }
-
-                            if vm.query.isEmpty && !vm.isRecording {
-                                Text("e.g. There was this cartoon I watched as a kid where kids had spinning tops that battled each other...")
-                                    .foregroundColor(Color(white: 0.3))
-                                    .font(.body)
-                                    .allowsHitTesting(false)
-                                    .padding(.top, -110)
                             }
 
                             if vm.isRecording {
@@ -88,7 +72,6 @@ struct SearchView: View {
                                     Circle().fill(Color.red).frame(width: 8, height: 8)
                                     Text("Listening...").font(.caption).foregroundColor(Color(red: 0.925, green: 0.286, blue: 0.6))
                                 }
-                                .padding(.top, -4)
                             }
 
                             Divider().background(Color(white: 0.15))
@@ -102,6 +85,21 @@ struct SearchView: View {
                                     Text("\(vm.storeService.remainingFreeSearches) free left")
                                         .font(.caption2).foregroundColor(Color(red: 0.655, green: 0.545, blue: 0.980))
                                 }
+
+                                // Microphone button
+                                Button(action: { vm.toggleRecording() }) {
+                                    Image(systemName: vm.isRecording ? "stop.fill" : "mic.fill")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                        .padding(12)
+                                        .background(
+                                            vm.isRecording
+                                                ? AnyShapeStyle(Color.red)
+                                                : AnyShapeStyle(LinearGradient(colors: [Color(red: 0.545, green: 0.361, blue: 0.965), Color(red: 0.925, green: 0.286, blue: 0.6)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                        )
+                                        .cornerRadius(12)
+                                }
+                                .buttonStyle(.plain)
 
                                 Button(action: { isTextEditorFocused = false; Task { await vm.search() } }) {
                                     Text(vm.isLoading ? "Searching..." : "Find It")
