@@ -25,6 +25,34 @@ class SpeechService: ObservableObject {
         }
     }
 
+    /// Map short language codes to full locale identifiers for SFSpeechRecognizer
+    private func speechLocale(for code: String) -> Locale {
+        let mapping: [String: String] = [
+            "en": "en-US",
+            "es": "es-ES",
+            "fr": "fr-FR",
+            "de": "de-DE",
+            "pt": "pt-BR",
+            "it": "it-IT",
+            "ru": "ru-RU",
+            "ar": "ar-SA",
+            "fa": "fa-IR",
+            "hi": "hi-IN",
+            "zh": "zh-CN",
+            "ja": "ja-JP",
+            "ko": "ko-KR",
+            "tr": "tr-TR",
+            "id": "id-ID",
+            "th": "th-TH",
+            "vi": "vi-VN",
+            "pl": "pl-PL",
+            "nl": "nl-NL",
+            "sv": "sv-SE",
+        ]
+        let localeId = mapping[code] ?? "\(code)-\(code.uppercased())"
+        return Locale(identifier: localeId)
+    }
+
     func startRecording(language: String = "en") async -> Bool {
         // Request authorization if not already authorized
         if !isAuthorized {
@@ -40,7 +68,13 @@ class SpeechService: ObservableObject {
 
         stopRecording()
 
-        recognizer = SFSpeechRecognizer(locale: Locale(identifier: language))
+        let locale = speechLocale(for: language)
+        recognizer = SFSpeechRecognizer(locale: locale)
+
+        // If the specific locale isn't available, fall back to default
+        if recognizer == nil || recognizer?.isAvailable != true {
+            recognizer = SFSpeechRecognizer()
+        }
         guard recognizer?.isAvailable == true else { return false }
 
         let audioSession = AVAudioSession.sharedInstance()
