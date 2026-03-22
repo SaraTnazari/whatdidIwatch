@@ -71,11 +71,23 @@ class SpeechService: ObservableObject {
         let locale = speechLocale(for: language)
         recognizer = SFSpeechRecognizer(locale: locale)
 
-        // If the specific locale isn't available, fall back to default
-        if recognizer == nil || recognizer?.isAvailable != true {
-            recognizer = SFSpeechRecognizer()
+        // Check if the requested locale is supported on this device.
+        // Do NOT silently fall back to the default (English) recognizer —
+        // that causes Farsi/Arabic voice input to produce English text.
+        guard recognizer?.isAvailable == true else {
+            print("Speech recognition not available for locale: \(locale.identifier)")
+            // Try supported locales for the same language family
+            // e.g. "fa" might work as "fa" on some devices
+            let supportedLocales = SFSpeechRecognizer.supportedLocales()
+            let langPrefix = language.prefix(2)
+            if let fallbackLocale = supportedLocales.first(where: { $0.identifier.hasPrefix(String(langPrefix)) }) {
+                recognizer = SFSpeechRecognizer(locale: fallbackLocale)
+            }
+            guard recognizer?.isAvailable == true else {
+                print("No speech recognizer available for language: \(language)")
+                return false
+            }
         }
-        guard recognizer?.isAvailable == true else { return false }
 
         let audioSession = AVAudioSession.sharedInstance()
         do {
