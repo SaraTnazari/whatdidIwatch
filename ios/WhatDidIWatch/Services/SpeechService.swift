@@ -74,7 +74,7 @@ class SpeechService: ObservableObject {
         // Check if the requested locale is supported on this device.
         // Do NOT silently fall back to the default (English) recognizer —
         // that causes Farsi/Arabic voice input to produce English text.
-        guard recognizer?.isAvailable == true else {
+        if recognizer == nil || recognizer?.isAvailable != true {
             print("Speech recognition not available for locale: \(locale.identifier)")
             // Try supported locales for the same language family
             // e.g. "fa" might work as "fa" on some devices
