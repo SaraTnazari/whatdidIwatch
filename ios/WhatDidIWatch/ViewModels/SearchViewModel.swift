@@ -18,14 +18,26 @@ class SearchViewModel: ObservableObject {
     let storeService = StoreService()
     let speechService = SpeechService()
     private var speechCancellable: AnyCancellable?
+    private var errorCancellable: AnyCancellable?
 
     init() {
         loadSettings()
+        // Voice is always available — even if Apple speech recognition isn't authorized,
+        // we fall back to Whisper via the backend for unsupported languages
+        isSpeechAvailable = true
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
-                self?.isSpeechAvailable = (status == .authorized)
+                self?.speechService.isAuthorized = (status == .authorized)
             }
         }
+        // Watch for async errors from speech service (e.g. Whisper transcription failures)
+        errorCancellable = speechService.$errorMessage
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] error in
+                if let error = error {
+                    self?.errorMessage = error
+                }
+            }
     }
 
     func toggleRecording() {
