@@ -48,6 +48,9 @@ class SearchViewModel: ObservableObject {
                                 self?.query = text
                             }
                         }
+                } else if let speechError = speechService.errorMessage {
+                    // Show error (e.g. language not supported for voice)
+                    errorMessage = speechError
                 }
             }
         }

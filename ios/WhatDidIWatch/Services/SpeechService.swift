@@ -7,6 +7,7 @@ class SpeechService: ObservableObject {
     @Published var isRecording = false
     @Published var transcribedText = ""
     @Published var isAuthorized = false
+    @Published var errorMessage: String?
 
     private var recognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -53,48 +54,80 @@ class SpeechService: ObservableObject {
         return Locale(identifier: localeId)
     }
 
+    /// Check if a language is supported by SFSpeechRecognizer on this device
+    func isLanguageSupported(_ code: String) -> Bool {
+        let locale = speechLocale(for: code)
+        let supported = SFSpeechRecognizer.supportedLocales()
+
+        // Check exact match first
+        if supported.contains(where: { $0.identifier == locale.identifier }) {
+            return true
+        }
+
+        // Check language family match (e.g., "fa" matches "fa-IR" or "fa_IR")
+        let langPrefix = String(code.prefix(2))
+        return supported.contains(where: { $0.identifier.hasPrefix(langPrefix) })
+    }
+
     func startRecording(language: String = "en") async -> Bool {
+        // Clear any previous error
+        errorMessage = nil
+
         // Request authorization if not already authorized
         if !isAuthorized {
             let granted = await requestAuthorization()
             if !granted {
+                errorMessage = "Speech recognition permission denied. Please enable it in Settings > Privacy > Speech Recognition."
                 return false
             }
         }
 
         // Also need microphone permission
         let micGranted = await AVAudioApplication.requestRecordPermission()
-        guard micGranted else { return false }
+        guard micGranted else {
+            errorMessage = "Microphone permission denied. Please enable it in Settings > Privacy > Microphone."
+            return false
+        }
 
         stopRecording()
 
+        // Reset transcribed text for the new session
+        transcribedText = ""
+
+        // Find the best recognizer for the requested language
         let locale = speechLocale(for: language)
+        let supported = SFSpeechRecognizer.supportedLocales()
+        let langPrefix = String(language.prefix(2))
+
+        // Try exact locale first
         recognizer = SFSpeechRecognizer(locale: locale)
 
-        // Check if the requested locale is supported on this device.
-        // Do NOT silently fall back to the default (English) recognizer —
-        // that causes Farsi/Arabic voice input to produce English text.
+        // If exact locale isn't available, try any locale in the same language family
         if recognizer == nil || recognizer?.isAvailable != true {
-            print("Speech recognition not available for locale: \(locale.identifier)")
-            // Try supported locales for the same language family
-            // e.g. "fa" might work as "fa" on some devices
-            let supportedLocales = SFSpeechRecognizer.supportedLocales()
-            let langPrefix = language.prefix(2)
-            if let fallbackLocale = supportedLocales.first(where: { $0.identifier.hasPrefix(String(langPrefix)) }) {
-                recognizer = SFSpeechRecognizer(locale: fallbackLocale)
-            }
-            guard recognizer?.isAvailable == true else {
-                print("No speech recognizer available for language: \(language)")
-                return false
+            print("[Speech] Exact locale \(locale.identifier) not available, searching alternatives...")
+            if let altLocale = supported.first(where: { $0.identifier.hasPrefix(langPrefix) }) {
+                print("[Speech] Trying alternative locale: \(altLocale.identifier)")
+                recognizer = SFSpeechRecognizer(locale: altLocale)
             }
         }
+
+        // Final check — do NOT fall back to English
+        guard let recognizer = recognizer, recognizer.isAvailable else {
+            let langName = Locale.current.localizedString(forLanguageCode: language) ?? language
+            print("[Speech] No recognizer available for \(language)")
+            errorMessage = "Voice input for \(langName) is not available on this device. Try using the keyboard's dictation (🎙️ on keyboard) instead."
+            return false
+        }
+
+        print("[Speech] Using recognizer with locale: \(recognizer.locale.identifier) for requested language: \(language)")
 
         let audioSession = AVAudioSession.sharedInstance()
         do {
             try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
-            print("Audio session error: \(error)")
+            print("[Speech] Audio session error: \(error)")
+            errorMessage = "Could not start audio recording."
             return false
         }
 
@@ -102,10 +135,23 @@ class SpeechService: ObservableObject {
         guard let recognitionRequest = recognitionRequest else { return false }
         recognitionRequest.shouldReportPartialResults = true
 
-        recognitionTask = recognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+        // Allow server-side recognition — on-device models may not be
+        // downloaded for all languages (especially Farsi, Arabic).
+        // Server-side recognition supports more languages reliably.
+        if #available(iOS 15, *) {
+            recognitionRequest.requiresOnDeviceRecognition = false
+        }
+
+        // Add task hint for better recognition
+        recognitionRequest.taskHint = .dictation
+
+        recognitionTask = recognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             Task { @MainActor in
                 if let result = result {
                     self?.transcribedText = result.bestTranscription.formattedString
+                }
+                if let error = error {
+                    print("[Speech] Recognition error: \(error.localizedDescription)")
                 }
                 if error != nil || (result?.isFinal ?? false) {
                     self?.stopRecording()
@@ -125,7 +171,8 @@ class SpeechService: ObservableObject {
             isRecording = true
             return true
         } catch {
-            print("Audio engine error: \(error)")
+            print("[Speech] Audio engine error: \(error)")
+            errorMessage = "Could not start audio recording."
             return false
         }
     }
