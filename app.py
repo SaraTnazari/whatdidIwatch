@@ -21,7 +21,9 @@ import re
 import json
 import traceback
 from typing import Optional
+import tempfile
 import anthropic
+import openai
 import requests
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
@@ -31,9 +33,11 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=os.path.join(BASE_DIR, "static"))
+app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024  # 25MB max (for audio uploads)
 
-# ── Claude API client ──────────────────────────────────────────────────────────
+# ── API clients ────────────────────────────────────────────────────────────────
 client = anthropic.Anthropic()  # Uses ANTHROPIC_API_KEY env var
+openai_client = openai.OpenAI()  # Uses OPENAI_API_KEY env var
 
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 TMDB_BASE = "https://api.themoviedb.org/3"
@@ -273,6 +277,54 @@ def search():
         print(f"[Error] Unexpected: {e}")
         traceback.print_exc()
         return jsonify({"error": f"Something went wrong: {str(e)}"}), 500
+
+
+# ── Transcription (Whisper) ────────────────────────────────────────────────────
+
+@app.route("/api/transcribe", methods=["POST"])
+def transcribe():
+    """Transcribe audio using OpenAI Whisper.
+    Used for languages not supported by Apple's on-device speech recognition (e.g. Farsi, Arabic)."""
+    if "audio" not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400
+
+    audio_file = request.files["audio"]
+    language = request.form.get("language", "")
+
+    whisper_lang_map = {
+        "fa": "fa", "ar": "ar", "en": "en", "es": "es", "fr": "fr",
+        "de": "de", "pt": "pt", "it": "it", "ru": "ru", "hi": "hi",
+        "zh": "zh", "ja": "ja", "ko": "ko", "tr": "tr", "id": "id",
+        "th": "th", "vi": "vi", "pl": "pl", "nl": "nl", "sv": "sv",
+    }
+    whisper_lang = whisper_lang_map.get(language, "")
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".m4a", delete=False) as tmp:
+            audio_file.save(tmp)
+            tmp_path = tmp.name
+
+        with open(tmp_path, "rb") as f:
+            whisper_params = {"model": "whisper-1", "file": f}
+            if whisper_lang:
+                whisper_params["language"] = whisper_lang
+            transcript = openai_client.audio.transcriptions.create(**whisper_params)
+
+        os.unlink(tmp_path)
+        return jsonify({"text": transcript.text})
+
+    except openai.AuthenticationError:
+        return jsonify({"error": "Speech transcription service not configured."}), 500
+    except Exception as e:
+        print(f"[Transcribe Error] {e}")
+        traceback.print_exc()
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+        return jsonify({"error": "Could not transcribe audio. Please try again."}), 500
 
 
 # ── Serve Frontend ─────────────────────────────────────────────────────────────

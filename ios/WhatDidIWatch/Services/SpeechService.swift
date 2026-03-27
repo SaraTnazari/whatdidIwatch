@@ -288,8 +288,10 @@ class SpeechService: ObservableObject {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                print("[Speech] Whisper transcription failed")
-                errorMessage = "Could not transcribe audio. Please try again."
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                let responseBody = String(data: data, encoding: .utf8) ?? "no body"
+                print("[Speech] Whisper transcription failed: HTTP \(statusCode) — \(responseBody)")
+                errorMessage = "Could not transcribe audio (error \(statusCode)). Please try again."
                 return
             }
 
